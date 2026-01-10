@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(lsof:*)",
+      "Bash(chmod:*)",
+      "Bash(echo:*)",
+      "Bash(cat:*)",
+      "Bash(ccr restart:*)",
+      "Bash(ccr status:*)",
+      "Bash(tail:*)",
+      "Bash(ls:*)",
+      "Bash(xargs:*)",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:patch-diff.githubusercontent.com)",
+      "Bash(pnpm build:core:*)",
+      "Bash(pnpm install)",
+      "Bash(pnpm build:server:*)",
+      "Bash(pnpm build:cli:*)",
+      "Bash(pnpm build:*)",
+      "Bash(node:*)"
+    ]
+  }
+}

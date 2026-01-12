@@ -294,7 +294,7 @@ const DEFAULT_THEME: StatusLineThemeConfig = {
             type: "usage",
             icon: "↓",
             text: "{{outputTokens}}",
-            color: "#FFB347"  // Pastel orange/amber
+            color: "#20B2AA"  // Light sea green/teal
         },
         {
             type: "context",
@@ -378,7 +378,7 @@ const SIMPLE_THEME: StatusLineThemeConfig = {
             type: "usage",
             icon: "↓",
             text: "{{outputTokens}}",
-            color: "#FFB347"  // Pastel orange/amber
+            color: "#20B2AA"  // Light sea green/teal
         },
         {
             type: "context",

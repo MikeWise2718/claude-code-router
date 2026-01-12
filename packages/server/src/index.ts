@@ -5,7 +5,7 @@ import { join } from "path";
 import { initConfig, initDir } from "./utils";
 import { createServer } from "./server";
 import { apiKeyAuth } from "./middleware/auth";
-import { CONFIG_FILE, HOME_DIR, listPresets } from "@CCR/shared";
+import { CONFIG_FILE, HOME_DIR, listPresets, initializeRoutingState } from "@CCR/shared";
 import { createStream } from 'rotating-file-stream';
 import { sessionUsageCache } from "@musistudio/llms";
 import { SSEParserTransform } from "./utils/SSEParser.transform";
@@ -91,6 +91,10 @@ async function registerPluginsFromConfig(serverInstance: any, config: any): Prom
 async function getServer(options: RunOptions = {}) {
   await initializeClaudeConfig();
   await initDir();
+
+  // Initialize routing state for visual feedback (Phase 2)
+  await initializeRoutingState();
+
   const config = await initConfig();
 
   // Check if Providers is configured

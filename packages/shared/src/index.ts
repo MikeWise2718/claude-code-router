@@ -1,5 +1,8 @@
 export * from "./constants";
 
+// Export routing state utilities (Phase 2 visual feedback)
+export * from "./routingState";
+
 // Export preset-related functionality
 export * from './preset/types';
 export * from './preset/sensitiveFields';

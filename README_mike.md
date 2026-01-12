@@ -67,6 +67,39 @@ To disable the banner, add to your config:
 }
 ```
 
+### Routing State Tracking
+
+The server tracks routing decisions in a state file that can be read by other tools (like the statusline in Phase 3).
+
+**Location:** `$TMPDIR/claude-code-router/routing-state.json` (e.g., `/tmp/claude-code-router/routing-state.json` on Linux/Mac)
+
+**State file structure:**
+```json
+{
+  "lastUpdated": "2026-01-12T10:30:00.000Z",
+  "lastRequest": {
+    "model": "deepseek-reasoner",
+    "provider": "deepseek",
+    "scenario": "default",
+    "inputTokens": 1523,
+    "timestamp": "2026-01-12T10:30:00.000Z"
+  },
+  "session": {
+    "startTime": "2026-01-12T10:00:00.000Z",
+    "requestCount": 42,
+    "modelBreakdown": {
+      "deepseek/deepseek-reasoner": 35,
+      "anthropic/claude-3-5-haiku": 7
+    }
+  }
+}
+```
+
+The state file is:
+- Initialized when the server starts
+- Updated after each routing decision (non-blocking/async)
+- Useful for debugging which model handled your requests
+
 ## Fixes in this Fork
 
 ### DeepSeek Thinking Transformer (deepseek-reasoner model)

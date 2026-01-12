@@ -3,7 +3,7 @@ import { sessionUsageCache, Usage } from "./cache";
 import { readFile } from "fs/promises";
 import { opendir, stat } from "fs/promises";
 import { join } from "path";
-import { CLAUDE_PROJECTS_DIR, HOME_DIR } from "@CCR/shared";
+import { CLAUDE_PROJECTS_DIR, HOME_DIR, updateRoutingState } from "@CCR/shared";
 import { LRUCache } from "lru-cache";
 import { ConfigService } from "../services/config";
 import { TokenizerService } from "../services/tokenizer";
@@ -288,11 +288,18 @@ export const router = async (req: any, _res: any, context: RouterContext) => {
       req.scenarioType = 'default';
     }
     req.body.model = model;
+
+    // Update routing state for visual feedback (Phase 2)
+    // Fire and forget - don't block the request
+    updateRoutingState(model, req.scenarioType, tokenCount).catch(() => {});
   } catch (error: any) {
     req.log.error(`Error in router middleware: ${error.message}`);
     const Router = configService.get("Router");
     req.body.model = Router?.default;
     req.scenarioType = 'default';
+
+    // Update routing state even on error
+    updateRoutingState(Router?.default || "unknown", "default", 0).catch(() => {});
   }
   return;
 };

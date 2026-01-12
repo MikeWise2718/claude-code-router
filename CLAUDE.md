@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+**Important:** Also read `README_mike.md` for local fork setup and fixes.
+
+**Specs:** See `specs/` folder for planned features and implementation details.
+
 ## Project Overview
 
 Claude Code Router is a tool that routes Claude Code requests to different LLM providers. It uses a Monorepo architecture with five main packages:

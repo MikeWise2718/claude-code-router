@@ -8,6 +8,84 @@ import {
 import { quote } from 'shell-quote';
 import minimist from "minimist";
 import { createEnvVariables } from "./createEnvVariables";
+import { version } from "../../package.json";
+
+/**
+ * Parse a route string like "provider,model" into parts
+ */
+function parseRoute(route: string | undefined): { provider: string; model: string } | null {
+  if (!route) return null;
+  const parts = route.split(",");
+  if (parts.length >= 2) {
+    return { provider: parts[0], model: parts.slice(1).join(",") };
+  }
+  return null;
+}
+
+/**
+ * Print startup banner showing CCR is active and routing configuration
+ */
+function printStartupBanner(
+  config: any,
+  presetConfig?: PresetConfig | null,
+  presetName?: string
+) {
+  // Skip banner if disabled in config
+  if (config?.VisualFeedback?.startupBanner === false) {
+    return;
+  }
+
+  const port = config?.PORT || 3456;
+  const router = presetConfig?.router || config?.Router || {};
+
+  // Parse default route
+  const defaultRoute = parseRoute(router.default);
+  const defaultDisplay = defaultRoute
+    ? `${defaultRoute.model} @ ${defaultRoute.provider}`
+    : "not configured";
+
+  // Build additional routes summary
+  const additionalRoutes: string[] = [];
+  if (router.background) {
+    const r = parseRoute(router.background);
+    if (r) additionalRoutes.push(`background: ${r.model}`);
+  }
+  if (router.think) {
+    const r = parseRoute(router.think);
+    if (r) additionalRoutes.push(`think: ${r.model}`);
+  }
+  if (router.longContext) {
+    const r = parseRoute(router.longContext);
+    const threshold = router.longContextThreshold || 60000;
+    if (r) additionalRoutes.push(`longContext(>${threshold}): ${r.model}`);
+  }
+  if (router.webSearch) {
+    const r = parseRoute(router.webSearch);
+    if (r) additionalRoutes.push(`webSearch: ${r.model}`);
+  }
+
+  // Calculate box width
+  const lines: string[] = [];
+  lines.push(`CCR v${version} Active`);
+  lines.push(`Default: ${defaultDisplay}`);
+  if (presetName) {
+    lines.push(`Preset: ${presetName}`);
+  }
+  lines.push(`Port: ${port}`);
+  if (additionalRoutes.length > 0) {
+    lines.push(`Routes: ${additionalRoutes.join(", ")}`);
+  }
+
+  const maxLen = Math.max(...lines.map(l => l.length));
+  const boxWidth = maxLen + 4;
+
+  // Print box
+  console.log("\n" + "\u2500".repeat(boxWidth));
+  for (const line of lines) {
+    console.log(`  ${line}`);
+  }
+  console.log("\u2500".repeat(boxWidth) + "\n");
+}
 
 export interface PresetConfig {
   noServer?: boolean;
@@ -89,6 +167,9 @@ export async function executeCodeCommand(
 
   // Increment reference count when command starts
   incrementReferenceCount();
+
+  // Print startup banner
+  printStartupBanner(config, presetConfig, presetName);
 
   // Execute claude command
   const claudePath = config?.CLAUDE_PATH || process.env.CLAUDE_PATH || "claude";

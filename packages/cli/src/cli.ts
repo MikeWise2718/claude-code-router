@@ -45,38 +45,50 @@ const KNOWN_COMMANDS = [
 ];
 
 const HELP_TEXT = `
-Usage: ccr [command] [preset-name]
+Usage: ccr [command] [options]
 
 Commands:
-  start         Start server
-  stop          Stop server
-  restart       Restart server
-  status        Show server status
-  statusline    Integrated statusline
-  history       Show routing history and decisions
-  code          Execute claude command
-  model         Interactive model selection and configuration
-  preset        Manage presets (export, install, list, delete)
-  install       Install preset from GitHub marketplace
-  activate      Output environment variables for shell integration
-  ui            Open the web UI in browser
-  -v, version   Show version information
-  -h, help      Show help information
+  start             Start the CCR server
+  stop              Stop the CCR server
+  restart           Restart the CCR server
+  status            Show server status and configuration
+  code [args]       Launch Claude Code through CCR (routes requests to configured models)
+  history [opts]    Show routing history with trigger reasons
+  model             Interactive model selection and configuration
+  preset <action>   Manage presets (export, install, list, info, delete)
+  install <name>    Install preset from GitHub marketplace
+  activate          Output shell environment variables for integration
+  statusline        Output statusline for Claude Code integration (used internally)
+  ui                Open the web management UI in browser
+  -v, version       Show version information
+  -h, help          Show this help information
 
-Presets:
-  Any preset directory in ~/.claude-code-router/presets/
+History Options:
+  ccr history               Show last 10 routing decisions with reasons
+  ccr history -n 20         Show last 20 entries
+  ccr history -a            Show all history entries
+  ccr history -s            Include session summary (model breakdown)
+  ccr history --json        Output as JSON for scripting
+
+Preset Actions:
+  ccr preset list           List all installed presets
+  ccr preset export <name>  Export current config as a preset
+  ccr preset install <path> Install preset from local directory
+  ccr preset info <name>    Show preset details
+  ccr preset delete <name>  Delete a preset
 
 Examples:
-  ccr start
-  ccr code "Write a Hello World"
-  ccr my-preset "Write a Hello World"    # Use preset configuration
-  ccr model
-  ccr preset export my-config            # Export current config as preset
-  ccr preset install /path/to/preset     # Install a preset from directory
-  ccr preset list                        # List all presets
-  ccr install my-preset                  # Install preset from marketplace
-  eval "$(ccr activate)"  # Set environment variables globally
-  ccr ui
+  ccr start                              # Start the server
+  ccr code                               # Launch Claude Code through CCR
+  ccr code "Write a Hello World"         # Launch with initial prompt
+  ccr history -s                         # View routing history with summary
+  ccr model                              # Configure models interactively
+  ccr my-preset "prompt"                 # Use a preset configuration
+  eval "$(ccr activate)"                 # Set environment variables globally
+
+For more help on a specific command:
+  ccr history --help
+  ccr preset --help
 `;
 
 async function waitForService(

@@ -291,15 +291,15 @@ const DEFAULT_THEME: StatusLineThemeConfig = {
         },
         {
             type: "usage",
-            icon: "↑", // Up arrow
+            icon: "Tok: ↑",
             text: "{{inputTokens}}",
-            color: "bright_green"
+            color: "#20B2AA"  // Light sea green/teal
         },
         {
             type: "usage",
-            icon: "↓", // Down arrow
+            icon: "↓",
             text: "{{outputTokens}}",
-            color: "bright_yellow"
+            color: "#FFB347"  // Pastel orange/amber
         }
     ]
 };
@@ -330,14 +330,14 @@ const POWERLINE_THEME: StatusLineThemeConfig = {
         },
         {
             type: "usage",
-            icon: "↑", // Up arrow
+            icon: "Tok: ↑",
             text: "{{inputTokens}}",
             color: "white",
             background: "bg_bright_green"
         },
         {
             type: "usage",
-            icon: "↓", // Down arrow
+            icon: "↓",
             text: "{{outputTokens}}",
             color: "white",
             background: "bg_bright_yellow"
@@ -374,15 +374,15 @@ const SIMPLE_THEME: StatusLineThemeConfig = {
         },
         {
             type: "usage",
-            icon: "↑",
+            icon: "Tok: ↑",
             text: "{{inputTokens}}",
-            color: "bright_green"
+            color: "#20B2AA"  // Light sea green/teal
         },
         {
             type: "usage",
             icon: "↓",
             text: "{{outputTokens}}",
-            color: "bright_yellow"
+            color: "#FFB347"  // Pastel orange/amber
         }
     ]
 };

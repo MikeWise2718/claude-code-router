@@ -295,6 +295,12 @@ const DEFAULT_THEME: StatusLineThemeConfig = {
             icon: "↓",
             text: "{{outputTokens}}",
             color: "#FFB347"  // Pastel orange/amber
+        },
+        {
+            type: "context",
+            icon: "Ctx:",
+            text: "{{contextDisplay}}",
+            color: "#90EE90"  // Light green
         }
     ]
 };
@@ -373,6 +379,12 @@ const SIMPLE_THEME: StatusLineThemeConfig = {
             icon: "↓",
             text: "{{outputTokens}}",
             color: "#FFB347"  // Pastel orange/amber
+        },
+        {
+            type: "context",
+            icon: "Ctx:",
+            text: "{{contextDisplay}}",
+            color: "#90EE90"  // Light green
         }
     ]
 };
@@ -801,6 +813,18 @@ export async function parseStatusLineData(input: StatusLineInput, presetName?: s
         const totalOutputTokens = input.context_window?.total_output_tokens || 0;
         const contextWindowSize = input.context_window?.context_window_size || 0;
 
+        // Calculate current context usage for display
+        const currentUsage = input.context_window?.current_usage;
+        const currentContextTokens = currentUsage
+            ? (currentUsage.input_tokens + currentUsage.cache_creation_input_tokens + currentUsage.cache_read_input_tokens)
+            : 0;
+        const formattedCurrentContext = currentContextTokens > 1000
+            ? `${(currentContextTokens / 1000).toFixed(0)}k`
+            : currentContextTokens.toString();
+        const formattedContextLimit = contextWindowSize > 1000
+            ? `${(contextWindowSize / 1000).toFixed(0)}k`
+            : contextWindowSize.toString();
+
         // Process cost data
         const totalCost = input.cost?.total_cost_usd || 0;
         const formattedCost = totalCost > 0 ? formatCost(totalCost) : '';
@@ -810,16 +834,11 @@ export async function parseStatusLineData(input: StatusLineInput, presetName?: s
         const linesRemoved = input.cost?.total_lines_removed || 0;
 
         // Build CCR display string with colors
-        // Colors: CCR label = orange, model = cyan, scenario = yellow/magenta
+        // Colors: CCR label = orange, model = cyan, scenario = same as CCR (orange)
         const ccrLabelColor = "\x1b[38;2;255;165;0m";  // Orange
         const ccrModelColor = "\x1b[38;2;0;255;255m";  // Cyan
         const ccrSeparatorColor = "\x1b[38;2;128;128;128m";  // Gray
-        const ccrScenarioColors: Record<string, string> = {
-            background: "\x1b[38;2;144;238;144m",  // Light green
-            think: "\x1b[38;2;255;105;180m",       // Hot pink
-            longContext: "\x1b[38;2;255;215;0m",   // Gold
-            webSearch: "\x1b[38;2;135;206;250m"    // Light sky blue
-        };
+        const ccrScenarioColor = ccrLabelColor;  // Same orange as CCR label
         const resetColor = "\x1b[0m";
 
         let ccrDisplay = "";
@@ -835,8 +854,7 @@ export async function parseStatusLineData(input: StatusLineInput, presetName?: s
                     webSearch: "web"
                 };
                 const indicator = scenarioIndicators[ccrInfo.scenario] || ccrInfo.scenario;
-                const scenarioColor = ccrScenarioColors[ccrInfo.scenario] || "\x1b[38;2;255;255;255m";
-                ccrDisplay = `${ccrLabelColor}CCR${ccrSeparatorColor}|${ccrModelColor}${ccrInfo.model}${ccrSeparatorColor}|${scenarioColor}${indicator}${resetColor}`;
+                ccrDisplay = `${ccrLabelColor}CCR${ccrSeparatorColor}|${ccrModelColor}${ccrInfo.model}${ccrSeparatorColor}|${ccrScenarioColor}${indicator}${resetColor}`;
             } else {
                 ccrDisplay = `${ccrLabelColor}CCR${ccrSeparatorColor}|${ccrModelColor}${ccrInfo.model}${resetColor}`;
             }
@@ -853,6 +871,7 @@ export async function parseStatusLineData(input: StatusLineInput, presetName?: s
             isStreaming: isStreaming ? 'streaming' : '',
             timeToFirstToken: formattedTimeToFirstToken,
             contextPercent: contextPercent.toString(),
+            contextDisplay: `${formattedCurrentContext}/${formattedContextLimit}`,
             streamingIndicator,
             contextWindowSize: contextWindowSize > 1000 ? `${(contextWindowSize / 1000).toFixed(0)}k` : contextWindowSize.toString(),
             totalInputTokens: totalInputTokens > 1000 ? `${(totalInputTokens / 1000).toFixed(1)}k` : totalInputTokens.toString(),

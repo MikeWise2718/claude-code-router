@@ -1,6 +1,6 @@
 # CCR Visual Feedback System
 
-**Status:** Phase 1 & 2 Implemented
+**Status:** Phase 1, 2, & 3 Implemented
 **Author:** Mike
 **Created:** 2026-01-12
 
@@ -145,7 +145,7 @@ Users need clear, real-time feedback about:
 
 ---
 
-### Phase 3: StatusLine Integration
+### Phase 3: StatusLine Integration - IMPLEMENTED
 
 **Goal:** Real-time model/provider display in Claude Code's status line.
 
@@ -212,6 +212,14 @@ Users need clear, real-time feedback about:
 - Verify format options work
 
 **Effort:** Medium (3-4 hours)
+
+**Actual Implementation (2026-01-12):**
+- Added `getCCRRoutingInfo()` function to read routing state in `statusline.ts`
+- Added CCR module to DEFAULT_THEME and SIMPLE_THEME (first module in list)
+- New template variables: `{{ccr}}`, `{{ccrModel}}`, `{{ccrProvider}}`, `{{ccrScenario}}`, `{{ccrRequests}}`, `{{ccrActive}}`
+- CCR display format: `CCR|model` or `CCR|model|scenario` for non-default scenarios
+- Stale detection: Shows just "CCR" if last request was >60s ago
+- Model from routing state takes priority over transcript model when available
 
 ---
 

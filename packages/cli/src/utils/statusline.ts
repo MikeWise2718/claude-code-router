@@ -2,8 +2,61 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { execSync } from "child_process";
 import { tmpdir } from "node:os";
-import { CONFIG_FILE, HOME_DIR, readPresetFile, getPresetDir, loadConfigFromManifest } from "@CCR/shared";
+import { CONFIG_FILE, HOME_DIR, readPresetFile, getPresetDir, loadConfigFromManifest, readRoutingState, RoutingState } from "@CCR/shared";
 import JSON5 from "json5";
+
+// CCR routing info for statusline display
+interface CCRRoutingInfo {
+    isActive: boolean;
+    model: string;
+    provider: string;
+    scenario: string;
+    requestCount: number;
+    isStale: boolean;  // true if last request was >60s ago
+}
+
+// Get CCR routing info from state file
+async function getCCRRoutingInfo(): Promise<CCRRoutingInfo> {
+    try {
+        const state = await readRoutingState();
+
+        // Check if state is stale (>60 seconds since last update)
+        const lastUpdated = new Date(state.lastUpdated).getTime();
+        const now = Date.now();
+        const isStale = (now - lastUpdated) > 60000;
+
+        if (state.lastRequest) {
+            return {
+                isActive: true,
+                model: state.lastRequest.model,
+                provider: state.lastRequest.provider,
+                scenario: state.lastRequest.scenario,
+                requestCount: state.session.requestCount,
+                isStale
+            };
+        }
+
+        // No requests yet, but CCR is active (state file exists)
+        return {
+            isActive: true,
+            model: "",
+            provider: "",
+            scenario: "default",
+            requestCount: 0,
+            isStale: true
+        };
+    } catch {
+        // State file doesn't exist or is invalid - CCR might not be running
+        return {
+            isActive: false,
+            model: "",
+            provider: "",
+            scenario: "default",
+            requestCount: 0,
+            isStale: true
+        };
+    }
+}
 
 export interface StatusLineModuleConfig {
     type: string;
@@ -213,6 +266,12 @@ async function executeScript(scriptPath: string, variables: Record<string, strin
 const DEFAULT_THEME: StatusLineThemeConfig = {
     modules: [
         {
+            type: "ccr",
+            icon: "",
+            text: "{{ccr}}",
+            color: "bright_green"
+        },
+        {
             type: "workDir",
             icon: "󰉋", // nf-md-folder_outline
             text: "{{workDirName}}",
@@ -289,6 +348,12 @@ const POWERLINE_THEME: StatusLineThemeConfig = {
 // Simple text theme configuration - fallback for when icons cannot be displayed
 const SIMPLE_THEME: StatusLineThemeConfig = {
     modules: [
+        {
+            type: "ccr",
+            icon: "",
+            text: "{{ccr}}",
+            color: "bright_green"
+        },
         {
             type: "workDir",
             icon: "",
@@ -646,6 +711,9 @@ export async function parseStatusLineData(input: StatusLineInput, presetName?: s
             // If not a Git repository or retrieval fails, ignore error
         }
 
+        // Get CCR routing info (Phase 3 - actual routed model)
+        const ccrInfo = await getCCRRoutingInfo();
+
         // Read last assistant message from transcript_path file
         const transcriptContent = await fs.readFile(input.transcript_path, "utf-8");
         const lines = transcriptContent.trim().split("\n");
@@ -673,7 +741,12 @@ export async function parseStatusLineData(input: StatusLineInput, presetName?: s
             }
         }
 
-        // If model name not retrieved from transcript, try to get from configuration file
+        // If CCR has routing info, use the actual routed model (takes priority)
+        if (ccrInfo.isActive && ccrInfo.model && !ccrInfo.isStale) {
+            model = ccrInfo.model;
+        }
+
+        // If model name not retrieved from CCR or transcript, try to get from configuration file
         if (!model) {
             try {
                 // Get project configuration file path
@@ -746,6 +819,26 @@ export async function parseStatusLineData(input: StatusLineInput, presetName?: s
         const linesAdded = input.cost?.total_lines_added || 0;
         const linesRemoved = input.cost?.total_lines_removed || 0;
 
+        // Build CCR display string
+        let ccrDisplay = "";
+        if (ccrInfo.isActive) {
+            if (ccrInfo.isStale || !ccrInfo.model) {
+                ccrDisplay = "CCR";  // Just show CCR is active, no recent request
+            } else if (ccrInfo.scenario !== "default") {
+                // Show scenario indicator for non-default scenarios
+                const scenarioIndicators: Record<string, string> = {
+                    background: "bg",
+                    think: "think",
+                    longContext: "long",
+                    webSearch: "web"
+                };
+                const indicator = scenarioIndicators[ccrInfo.scenario] || ccrInfo.scenario;
+                ccrDisplay = `CCR|${ccrInfo.model}|${indicator}`;
+            } else {
+                ccrDisplay = `CCR|${ccrInfo.model}`;
+            }
+        }
+
         // Define variable replacement mapping
         const variables: Record<string, string> = {
             workDirName,
@@ -767,7 +860,14 @@ export async function parseStatusLineData(input: StatusLineInput, presetName?: s
             linesRemoved: linesRemoved.toString(),
             netLines: (linesAdded - linesRemoved).toString(),
             version: input.version || '',
-            sessionId: input.session_id.substring(0, 8)
+            sessionId: input.session_id.substring(0, 8),
+            // CCR-specific variables (Phase 3)
+            ccr: ccrDisplay,
+            ccrModel: ccrInfo.model || '',
+            ccrProvider: ccrInfo.provider || '',
+            ccrScenario: ccrInfo.scenario || '',
+            ccrRequests: ccrInfo.requestCount.toString(),
+            ccrActive: ccrInfo.isActive ? 'true' : ''
         };
 
         // Determine the style to use

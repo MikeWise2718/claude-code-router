@@ -100,6 +100,38 @@ The state file is:
 - Updated after each routing decision (non-blocking/async)
 - Useful for debugging which model handled your requests
 
+### StatusLine Integration
+
+The statusline now shows CCR routing info in real-time. To enable:
+
+1. Add to your `~/.claude-code-router/config.json`:
+```json
+{
+  "StatusLine": {
+    "enabled": true
+  }
+}
+```
+
+2. Run `ccr code` - the statusline will show:
+   - `CCR|deepseek-chat` - CCR active with current model
+   - `CCR|gemini-2.0-flash|long` - Model with scenario indicator (for non-default scenarios)
+   - `CCR` - CCR active but no recent requests (idle)
+
+**Scenario indicators:**
+- `bg` - background routing
+- `think` - thinking/plan mode
+- `long` - long context routing
+- `web` - web search routing
+
+**Available template variables for custom themes:**
+- `{{ccr}}` - Full CCR display string
+- `{{ccrModel}}` - Just the model name
+- `{{ccrProvider}}` - Provider name
+- `{{ccrScenario}}` - Current scenario
+- `{{ccrRequests}}` - Request count this session
+- `{{ccrActive}}` - "true" if CCR is active
+
 ## Fixes in this Fork
 
 ### DeepSeek Thinking Transformer (deepseek-reasoner model)

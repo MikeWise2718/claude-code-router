@@ -121,12 +121,18 @@ const getProjectSpecificRouter = async (
   return undefined; // Return undefined to use original configuration
 };
 
+export interface RoutingResult {
+  model: string;
+  scenarioType: RouterScenarioType;
+  reason: string;
+}
+
 const getUseModel = async (
   req: any,
   tokenCount: number,
   configService: ConfigService,
   lastUsage?: Usage | undefined
-): Promise<{ model: string; scenarioType: RouterScenarioType }> => {
+): Promise<RoutingResult> => {
   const projectSpecificRouter = await getProjectSpecificRouter(req, configService);
   const providers = configService.get<any[]>("providers") || [];
   const Router = projectSpecificRouter || configService.get("Router");
@@ -140,9 +146,9 @@ const getUseModel = async (
       (m: any) => m.toLowerCase() === model
     );
     if (finalProvider && finalModel) {
-      return { model: `${finalProvider.name},${finalModel}`, scenarioType: 'default' };
+      return { model: `${finalProvider.name},${finalModel}`, scenarioType: 'default', reason: 'Explicit provider,model in request' };
     }
-    return { model: req.body.model, scenarioType: 'default' };
+    return { model: req.body.model, scenarioType: 'default', reason: 'Explicit provider,model in request' };
   }
 
   // if tokenCount is greater than the configured threshold, use the long context model
@@ -156,7 +162,10 @@ const getUseModel = async (
     req.log.info(
       `Using long context model due to token count: ${tokenCount}, threshold: ${longContextThreshold}`
     );
-    return { model: Router.longContext, scenarioType: 'longContext' };
+    const reason = tokenCountThreshold
+      ? `Token count (${tokenCount.toLocaleString()}) exceeded threshold (${longContextThreshold.toLocaleString()})`
+      : `Previous usage exceeded threshold, current tokens: ${tokenCount.toLocaleString()}`;
+    return { model: Router.longContext, scenarioType: 'longContext', reason };
   }
   if (
     req.body?.system?.length > 1 &&
@@ -170,7 +179,7 @@ const getUseModel = async (
         `<CCR-SUBAGENT-MODEL>${model[1]}</CCR-SUBAGENT-MODEL>`,
         ""
       );
-      return { model: model[1], scenarioType: 'default' };
+      return { model: model[1], scenarioType: 'default', reason: 'Explicit CCR-SUBAGENT-MODEL tag' };
     }
   }
   // Use the background model for any Claude Haiku variant
@@ -181,7 +190,7 @@ const getUseModel = async (
     globalRouter?.background
   ) {
     req.log.info(`Using background model for ${req.body.model}`);
-    return { model: globalRouter.background, scenarioType: 'background' };
+    return { model: globalRouter.background, scenarioType: 'background', reason: 'Background task (haiku model requested)' };
   }
   // The priority of websearch must be higher than thinking.
   if (
@@ -189,14 +198,14 @@ const getUseModel = async (
     req.body.tools.some((tool: any) => tool.type?.startsWith("web_search")) &&
     Router?.webSearch
   ) {
-    return { model: Router.webSearch, scenarioType: 'webSearch' };
+    return { model: Router.webSearch, scenarioType: 'webSearch', reason: 'Web search tool detected in request' };
   }
   // if exits thinking, use the think model
   if (req.body.thinking && Router?.think) {
     req.log.info(`Using think model for ${req.body.thinking}`);
-    return { model: Router.think, scenarioType: 'think' };
+    return { model: Router.think, scenarioType: 'think', reason: 'Thinking/plan mode enabled' };
   }
-  return { model: Router?.default, scenarioType: 'default' };
+  return { model: Router?.default, scenarioType: 'default', reason: 'Default routing' };
 };
 
 export interface RouterContext {
@@ -279,19 +288,22 @@ export const router = async (req: any, _res: any, context: RouterContext) => {
         req.log.error(`failed to load custom router: ${e.message}`);
       }
     }
+    let reason = 'Default routing';
     if (!model) {
       const result = await getUseModel(req, tokenCount, configService, lastMessageUsage);
       model = result.model;
       req.scenarioType = result.scenarioType;
+      reason = result.reason;
     } else {
       // Custom router doesn't provide scenario type, default to 'default'
       req.scenarioType = 'default';
+      reason = 'Custom router';
     }
     req.body.model = model;
 
     // Update routing state for visual feedback (Phase 2)
     // Fire and forget - don't block the request
-    updateRoutingState(model, req.scenarioType, tokenCount).catch(() => {});
+    updateRoutingState(model, req.scenarioType, tokenCount, reason).catch(() => {});
   } catch (error: any) {
     req.log.error(`Error in router middleware: ${error.message}`);
     const Router = configService.get("Router");
@@ -299,7 +311,7 @@ export const router = async (req: any, _res: any, context: RouterContext) => {
     req.scenarioType = 'default';
 
     // Update routing state even on error
-    updateRoutingState(Router?.default || "unknown", "default", 0).catch(() => {});
+    updateRoutingState(Router?.default || "unknown", "default", 0, `Error: ${error.message}`).catch(() => {});
   }
   return;
 };

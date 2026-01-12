@@ -4,6 +4,18 @@ import { dirname } from "path";
 import { ROUTING_STATE_FILE } from "./constants";
 
 /**
+ * A single routing history entry
+ */
+export interface RoutingHistoryEntry {
+  timestamp: string;
+  model: string;
+  provider: string;
+  scenario: string;
+  inputTokens: number;
+  reason: string;
+}
+
+/**
  * Routing state structure for visual feedback
  */
 export interface RoutingState {
@@ -14,13 +26,18 @@ export interface RoutingState {
     scenario: string;
     inputTokens: number;
     timestamp: string;
+    reason: string;
   } | null;
   session: {
     startTime: string;
     requestCount: number;
     modelBreakdown: Record<string, number>;
   };
+  history: RoutingHistoryEntry[];
 }
+
+// Maximum history entries to keep
+const MAX_HISTORY_ENTRIES = 100;
 
 /**
  * Parse a route string like "provider,model" into parts
@@ -46,6 +63,7 @@ export function createInitialRoutingState(): RoutingState {
       requestCount: 0,
       modelBreakdown: {},
     },
+    history: [],
   };
 }
 
@@ -92,13 +110,24 @@ export async function writeRoutingState(state: RoutingState): Promise<void> {
 export async function updateRoutingState(
   routeString: string,
   scenario: string,
-  inputTokens: number
+  inputTokens: number,
+  reason: string = "Default routing"
 ): Promise<void> {
   const parsed = parseRouteString(routeString);
   if (!parsed) return;
 
   const state = await readRoutingState();
   const now = new Date().toISOString();
+
+  // Create history entry
+  const historyEntry: RoutingHistoryEntry = {
+    timestamp: now,
+    model: parsed.model,
+    provider: parsed.provider,
+    scenario,
+    inputTokens,
+    reason,
+  };
 
   // Update last request
   state.lastRequest = {
@@ -107,7 +136,15 @@ export async function updateRoutingState(
     scenario,
     inputTokens,
     timestamp: now,
+    reason,
   };
+
+  // Add to history (keep last MAX_HISTORY_ENTRIES)
+  state.history = state.history || [];
+  state.history.push(historyEntry);
+  if (state.history.length > MAX_HISTORY_ENTRIES) {
+    state.history = state.history.slice(-MAX_HISTORY_ENTRIES);
+  }
 
   // Update session stats
   state.session.requestCount++;
@@ -134,4 +171,18 @@ export async function initializeRoutingState(): Promise<void> {
  */
 export function getRoutingStateFilePath(): string {
   return ROUTING_STATE_FILE;
+}
+
+/**
+ * Get routing history entries
+ * @param limit Maximum number of entries to return (default: all)
+ * @returns Array of history entries, most recent last
+ */
+export async function getRoutingHistory(limit?: number): Promise<RoutingHistoryEntry[]> {
+  const state = await readRoutingState();
+  const history = state.history || [];
+  if (limit && limit > 0) {
+    return history.slice(-limit);
+  }
+  return history;
 }

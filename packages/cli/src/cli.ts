@@ -18,6 +18,7 @@ import { join } from "path";
 import { parseStatusLineData, StatusLineInput } from "./utils/statusline";
 import {handlePresetCommand} from "./utils/preset";
 import { handleInstallCommand } from "./utils/installCommand";
+import { handleHistoryCommand } from "./utils/history";
 
 
 const command = process.argv[2];
@@ -29,6 +30,7 @@ const KNOWN_COMMANDS = [
   "restart",
   "status",
   "statusline",
+  "history",
   "code",
   "model",
   "preset",
@@ -51,6 +53,7 @@ Commands:
   restart       Restart server
   status        Show server status
   statusline    Integrated statusline
+  history       Show routing history and decisions
   code          Execute claude command
   model         Interactive model selection and configuration
   preset        Manage presets (export, install, list, delete)
@@ -261,7 +264,9 @@ async function main() {
         }
       });
       break;
-    // ADD THIS CASE
+    case "history":
+      await handleHistoryCommand(process.argv.slice(3));
+      break;
     case "model":
       await runModelSelector();
       break;

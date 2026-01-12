@@ -268,8 +268,8 @@ const DEFAULT_THEME: StatusLineThemeConfig = {
         {
             type: "ccr",
             icon: "",
-            text: "{{ccr}}",
-            color: "bright_green"
+            text: "{{ccr}}"
+            // No color - CCR module has inline colors
         },
         {
             type: "workDir",
@@ -351,8 +351,8 @@ const SIMPLE_THEME: StatusLineThemeConfig = {
         {
             type: "ccr",
             icon: "",
-            text: "{{ccr}}",
-            color: "bright_green"
+            text: "{{ccr}}"
+            // No color - CCR module has inline colors
         },
         {
             type: "workDir",
@@ -819,11 +819,23 @@ export async function parseStatusLineData(input: StatusLineInput, presetName?: s
         const linesAdded = input.cost?.total_lines_added || 0;
         const linesRemoved = input.cost?.total_lines_removed || 0;
 
-        // Build CCR display string
+        // Build CCR display string with colors
+        // Colors: CCR label = orange, model = cyan, scenario = yellow/magenta
+        const ccrLabelColor = "\x1b[38;2;255;165;0m";  // Orange
+        const ccrModelColor = "\x1b[38;2;0;255;255m";  // Cyan
+        const ccrSeparatorColor = "\x1b[38;2;128;128;128m";  // Gray
+        const ccrScenarioColors: Record<string, string> = {
+            background: "\x1b[38;2;144;238;144m",  // Light green
+            think: "\x1b[38;2;255;105;180m",       // Hot pink
+            longContext: "\x1b[38;2;255;215;0m",   // Gold
+            webSearch: "\x1b[38;2;135;206;250m"    // Light sky blue
+        };
+        const resetColor = "\x1b[0m";
+
         let ccrDisplay = "";
         if (ccrInfo.isActive) {
             if (ccrInfo.isStale || !ccrInfo.model) {
-                ccrDisplay = "CCR";  // Just show CCR is active, no recent request
+                ccrDisplay = `${ccrLabelColor}CCR${resetColor}`;  // Just show CCR is active, no recent request
             } else if (ccrInfo.scenario !== "default") {
                 // Show scenario indicator for non-default scenarios
                 const scenarioIndicators: Record<string, string> = {
@@ -833,9 +845,10 @@ export async function parseStatusLineData(input: StatusLineInput, presetName?: s
                     webSearch: "web"
                 };
                 const indicator = scenarioIndicators[ccrInfo.scenario] || ccrInfo.scenario;
-                ccrDisplay = `CCR|${ccrInfo.model}|${indicator}`;
+                const scenarioColor = ccrScenarioColors[ccrInfo.scenario] || "\x1b[38;2;255;255;255m";
+                ccrDisplay = `${ccrLabelColor}CCR${ccrSeparatorColor}|${ccrModelColor}${ccrInfo.model}${ccrSeparatorColor}|${scenarioColor}${indicator}${resetColor}`;
             } else {
-                ccrDisplay = `CCR|${ccrInfo.model}`;
+                ccrDisplay = `${ccrLabelColor}CCR${ccrSeparatorColor}|${ccrModelColor}${ccrInfo.model}${resetColor}`;
             }
         }
 

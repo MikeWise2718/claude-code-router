@@ -275,20 +275,15 @@ const DEFAULT_THEME: StatusLineThemeConfig = {
             type: "workDir",
             icon: "󰉋", // nf-md-folder_outline
             text: "{{workDirName}}",
-            color: "bright_blue"
+            color: "#DA70D6"  // Orchid/magenta
         },
         {
             type: "gitBranch",
             icon: "", // nf-dev-git_branch
             text: "{{gitBranch}}",
-            color: "bright_magenta"
+            color: "#DA70D6"  // Orchid/magenta
         },
-        {
-            type: "model",
-            icon: "󰚩", // nf-md-robot_outline
-            text: "{{model}}",
-            color: "bright_cyan"
-        },
+        // Model module removed - CCR already shows the routed model
         {
             type: "usage",
             icon: "Tok: ↑",
@@ -358,20 +353,15 @@ const SIMPLE_THEME: StatusLineThemeConfig = {
             type: "workDir",
             icon: "",
             text: "{{workDirName}}",
-            color: "bright_blue"
+            color: "#DA70D6"  // Orchid/magenta
         },
         {
             type: "gitBranch",
             icon: "",
             text: "{{gitBranch}}",
-            color: "bright_magenta"
+            color: "#DA70D6"  // Orchid/magenta
         },
-        {
-            type: "model",
-            icon: "",
-            text: "{{model}}",
-            color: "bright_cyan"
-        },
+        // Model module removed - CCR already shows the routed model
         {
             type: "usage",
             icon: "Tok: ↑",
@@ -394,13 +384,13 @@ const FULL_THEME: StatusLineThemeConfig = {
             type: "workDir",
             icon: "󰉋",
             text: "{{workDirName}}",
-            color: "bright_blue"
+            color: "#DA70D6"  // Orchid/magenta
         },
         {
             type: "gitBranch",
             icon: "",
             text: "{{gitBranch}}",
-            color: "bright_magenta"
+            color: "#DA70D6"  // Orchid/magenta
         },
         {
             type: "model",
@@ -424,7 +414,7 @@ const FULL_THEME: StatusLineThemeConfig = {
             type: "cost",
             icon: "💰",
             text: "{{cost}}",
-            color: "bright_magenta"
+            color: "#DA70D6"  // Orchid/magenta
         },
         {
             type: "duration",
